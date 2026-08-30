@@ -1,0 +1,13 @@
+Place your official company logo file here, named exactly:
+
+    tata_logo.png
+
+The app automatically detects this file and displays it in the header and
+on the login page. If the file is missing, a plain text "TATA" placeholder
+is shown instead so the app still runs.
+
+Note: the actual Tata logo is trademarked/copyrighted, so it isn't included
+in this codebase — pull the approved logo file from your organization's
+internal brand-asset repository and drop it in this folder.
+
+Recommended size: ~300x120px PNG with a transparent or white background.

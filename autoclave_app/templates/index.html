@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Autoclave Batch Optimizer{% endblock %}
+
+{% block nav %}
+<nav class="app-nav">
+  <div class="nav-inner">
+    <span class="tag">{{ settings.total_ports }}-Port Autoclave</span>
+    <span class="tag">Tool Footprint Check</span>
+    <span class="tag">Dynamic Availability</span>
+    <span class="tag">Data auto-purged after {{ retention_days }} days</span>
+  </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="card kpi-card">
+    <div class="muted">Total Parts</div>
+    <div class="kpi">{{ parts|length }}</div>
+  </div>
+  <div class="card kpi-card">
+    <div class="muted">Available (YES)</div>
+    <div class="kpi">{{ parts|selectattr('Availability','equalto','YES')|list|length }}</div>
+  </div>
+  <div class="card kpi-card">
+    <div class="muted">Autoclave Capacity</div>
+    <div class="kpi">{{ settings.total_ports }} <span class="muted">ports</span></div>
+  </div>
+  <div class="card kpi-card">
+    <div class="muted">Working Envelope</div>
+    <div class="kpi kpi-small">{{ settings.autoclave_length_mm|round(0) }} × {{ settings.autoclave_width_mm|round(0) }} mm</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h2>⚙ Autoclave &amp; Optimization Settings</h2>
+    <form method="post" action="{{ url_for('save_settings_route') }}">
+      <div class="three-col">
+        <div><label>Autoclave Length (mm)</label><input type="number" step="0.1" name="autoclave_length_mm" value="{{ settings.autoclave_length_mm }}"></div>
+        <div><label>Autoclave Width (mm)</label><input type="number" step="0.1" name="autoclave_width_mm" value="{{ settings.autoclave_width_mm }}"></div>
+        <div><label>Total Ports</label><input type="number" name="total_ports" value="{{ settings.total_ports }}"></div>
+        <div><label>BIG Ports</label><input type="number" name="big_ports" value="{{ settings.big_ports }}"></div>
+        <div><label>SMALL Ports</label><input type="number" name="small_ports" value="{{ settings.small_ports }}"></div>
+        <div><label>Max BIG Parts / Batch</label><input type="number" name="max_big_parts" value="{{ settings.max_big_parts }}"></div>
+      </div>
+      <label>BIG classification threshold — Tool Surface Area (in²)</label>
+      <input type="number" step="0.01" name="big_area_threshold_in2" value="{{ settings.big_area_threshold_in2 }}">
+      <p class="small muted">Configurable placeholder rule — replace with your approved engineering BIG/SMALL classification if different.</p>
+      <button class="btn btn-success" type="submit">Save Settings</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>🚀 Run Optimization</h2>
+    <p>Checks availability, port capacity, BIG-part limit, tool dimensions, rotation and 2D placement inside the autoclave working envelope.</p>
+    <form method="post" action="{{ url_for('optimize') }}">
+      <button class="btn btn-accent" type="submit">RUN BEST BATCH OPTIMIZATION</button>
+    </form>
+    {% if output_exists %}
+      <a class="btn btn-secondary" style="margin-top:10px" href="{{ url_for('download') }}">Download Optimized_Batches.xlsx</a>
+    {% endif %}
+    <p class="small muted" style="margin-top:15px">Every Excel update creates a timestamped backup in the <b>backups</b> folder.
+    Backups and generated reports older than <b>{{ retention_days }} days</b> are deleted automatically.</p>
+  </div>
+</div>
+
+<div class="card section">
+  <h2>🔄 Availability — change YES / NO anytime</h2>
+  <form method="post" action="{{ url_for('update_all_availability') }}">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Part Number</th><th>Availability</th><th>Tool</th><th>Tool L (in)</th><th>Tool W (in)</th><th>Tool Area (in²)</th></tr>
+        </thead>
+        <tbody>
+        {% for p in parts %}
+          <tr>
+            <td><b>{{ p['Part Number'] }}</b></td>
+            <td>
+              <select name="avail__{{ p['Part Number'] }}">
+                <option value="YES" {% if p['Availability']|string|trim|upper == 'YES' %}selected{% endif %}>YES</option>
+                <option value="NO" {% if p['Availability']|string|trim|upper != 'YES' %}selected{% endif %}>NO</option>
+              </select>
+            </td>
+            <td>{{ p['TOOL NUMBER'] }}</td>
+            <td>{{ p['LENGTH (INCH)'] }}</td>
+            <td>{{ p['WIDTH(INCH)'] }}</td>
+            <td>{{ p['SURFACE AREA(INCH SQ)'] }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px"><button class="btn btn-success" type="submit">SAVE ALL AVAILABILITY CHANGES</button></div>
+  </form>
+</div>
+
+<div class="card section">
+  <h2>➕ Add New Part</h2>
+  <form method="post" action="{{ url_for('add_part') }}">
+    <div class="three-col">
+      <div><label>Part Number</label><input name="Part Number" required></div>
+      <div><label>Part L (inch)</label><input name="L (INCHES)" type="number" step="0.001"></div>
+      <div><label>Part W (inch)</label><input name="W (INCHES)" type="number" step="0.001"></div>
+      <div><label>Part H (inch)</label><input name="H (INCHES)" type="number" step="0.001"></div>
+      <div><label>Availability</label><select name="Availability"><option>YES</option><option>NO</option></select></div>
+      <div><label>Tool Number</label><input name="TOOL NUMBER"></div>
+      <div><label>Tool Length (inch)</label><input name="LENGTH (INCH)" type="number" step="0.001"></div>
+      <div><label>Tool Width (inch)</label><input name="WIDTH(INCH)" type="number" step="0.001"></div>
+      <div><label>Tool Surface Area (in²)</label><input name="SURFACE AREA(INCH SQ)" type="number" step="0.001"></div>
+    </div>
+    <button class="btn btn-success" style="margin-top:12px" type="submit">ADD PART</button>
+  </form>
+</div>
+
+<div class="card section">
+  <h2>📌 Final constraint logic</h2>
+  <div class="three-col">
+    <div><b>Port</b><br>Σ ports ≤ configured capacity.</div>
+    <div><b>BIG parts</b><br>Maximum configured BIG parts per batch.</div>
+    <div><b>Physical fit</b><br>Tool rectangles must fit within the autoclave envelope, with 90° rotation checked.</div>
+  </div>
+  <p class="footnote">Engineering note: this application is a planning/optimization aid. Final production loading must
+  remain subject to approved tooling, clearance, airflow, cure-cycle and safety requirements.</p>
+</div>
+{% endblock %}

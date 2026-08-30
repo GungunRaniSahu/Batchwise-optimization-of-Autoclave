@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# App-generated / sensitive data — never commit these
+users.json
+settings.json
+backups/*.xlsx
+Optimized_Batches.xlsx
+.env
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
