@@ -1,8 +1,14 @@
 """
 Authentication helpers.
 
-Users are stored in a local JSON file (users.json) with hashed passwords.
-No plaintext passwords are ever stored or logged.
+Users are stored in a local JSON file (users.json). Passwords and recovery
+PINs are hashed with werkzeug's generate_password_hash — nothing is ever
+stored or logged in plaintext.
+
+Password reset works via a "recovery PIN" set at account-creation time
+(there's no email server configured for this internal tool). Anyone who
+knows a username's recovery PIN can set a new password for that account,
+so treat the PIN like a second password.
 """
 import json
 import os
@@ -32,6 +38,14 @@ def save_users(users_file, users):
         json.dump(users, f, indent=2)
 
 
+def user_exists(users_file, username):
+    return username in load_users(users_file)
+
+
+def any_users_exist(users_file):
+    return len(load_users(users_file)) > 0
+
+
 def get_user(users_file, username):
     users = load_users(users_file)
     rec = users.get(username)
@@ -50,10 +64,30 @@ def verify_user(users_file, username, password):
     return None
 
 
-def create_user(users_file, username, password, role="operator"):
+def create_user(users_file, username, password, role="operator", recovery_pin=None):
     users = load_users(users_file)
-    users[username] = {
+    record = {
         "password_hash": generate_password_hash(password),
         "role": role,
     }
+    if recovery_pin:
+        record["recovery_pin_hash"] = generate_password_hash(recovery_pin)
+    users[username] = record
     save_users(users_file, users)
+
+
+def verify_recovery_pin(users_file, username, pin):
+    users = load_users(users_file)
+    rec = users.get(username)
+    if not rec or "recovery_pin_hash" not in rec:
+        return False
+    return check_password_hash(rec["recovery_pin_hash"], pin)
+
+
+def reset_password(users_file, username, new_password):
+    users = load_users(users_file)
+    if username not in users:
+        return False
+    users[username]["password_hash"] = generate_password_hash(new_password)
+    save_users(users_file, users)
+    return True

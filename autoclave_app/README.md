@@ -20,6 +20,17 @@ authentication, a refreshed UI, and automatic 60-day data retention.
    `Optimized_Batches.xlsx` once they are older than 60 days. It runs once
    at startup and then every 24 hours. Change the window with the
    `DATA_RETENTION_DAYS` environment variable if needed.
+5. **Create account from the UI** — `/register`, linked from the login page.
+   The first account ever created becomes `admin` automatically; everyone
+   after that signs up as `operator`. No more requiring CLI access just to
+   get a login.
+6. **Forgot password** — `/forgot-password`, linked from the login page.
+   Since this internal tool has no email server, reset works via a
+   "recovery PIN" set at sign-up (4+ digits): enter your username + PIN,
+   then set a new password. Treat the PIN like a second password — anyone
+   who knows it can reset that account's password.
+7. **Flat, minimal UI matching your logo** — redesigned in solid Tata blue
+   (`#3675bc`) with no gradients anywhere, on `static/css/style.css`.
 
 ## Folder structure
 
@@ -42,13 +53,15 @@ autoclave_app/
 │   └── .gitkeep
 ├── static/
 │   ├── css/
-│   │   └── style.css              # New UI styling
+│   │   └── style.css              # Flat, minimal UI styling (no gradients)
 │   └── img/
 │       ├── PUT_LOGO_HERE.txt        # Instructions
 │       └── tata_logo.png              # <-- you add this (not included)
 └── templates/
     ├── base.html                     # Shared header/nav/footer + logo
-    ├── login.html                    # Sign-in page
+    ├── login.html                    # Sign-in page (links to register/forgot password)
+    ├── register.html                  # Self-service account creation
+    ├── forgot_password.html            # Recovery-PIN based password reset
     └── index.html                    # Main dashboard (extends base.html)
 ```
 
@@ -68,8 +81,10 @@ export SECRET_KEY="a-long-random-string"     # Windows (PowerShell): $env:SECRET
 # 4. (Optional) change the retention window, default is 60 days
 export DATA_RETENTION_DAYS=60
 
-# 5. Create your first login user
+# 5. Create your first login user — either from the CLI...
 python manage_users.py add admin --role admin
+# ...or just start the app and open /register in the browser.
+# The first account created either way becomes admin automatically.
 
 # 6. Add your organization's approved logo
 cp /path/to/approved/tata_logo.png static/img/tata_logo.png
@@ -115,7 +130,7 @@ git push -u origin feature/ui-revamp-auth-retention
 ```
 
 Suggested branch name: `feature/ui-revamp-auth-retention`
-Suggested commit message: `feat: redesign UI, add login/logout auth, add 60-day data retention`
+Suggested commit message: `feat: redesign UI, add login/logout/register/forgot-password auth, add 60-day data retention`
 
 If you prefer smaller, separate commits instead of one big commit:
 

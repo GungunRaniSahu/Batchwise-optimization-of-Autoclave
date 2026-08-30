@@ -37,7 +37,8 @@ def main():
         if pw != pw2:
             print("Passwords do not match.")
             return
-        create_user(Config.USERS_FILE, args.username, pw, args.role)
+        pin = getpass.getpass("Recovery PIN (used for 'Forgot password', optional, press Enter to skip): ")
+        create_user(Config.USERS_FILE, args.username, pw, args.role, recovery_pin=pin or None)
         print(f"User '{args.username}' saved with role '{args.role}'.")
 
     elif args.cmd == "list":
