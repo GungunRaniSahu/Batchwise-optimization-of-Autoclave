@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Autoclave Batch Optimizer{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      {% if logo_exists %}
+        <img class="brand-logo" src="{{ url_for('static', filename='img/tata_logo.png') }}" alt="Company logo">
+      {% else %}
+        <div class="brand-logo brand-logo--placeholder" title="Place your official logo file at static/img/tata_logo.png">TATA</div>
+      {% endif %}
+      <div class="brand-text">
+        <div class="brand-title">Autoclave Batch Optimizer</div>
+        <div class="brand-subtitle">Aerospace Manufacturing • Composite Tooling • Capacity &amp; Layout Planning</div>
+      </div>
+    </div>
+    {% if current_user.is_authenticated %}
+    <div class="header-actions">
+      <span class="user-pill">👤 {{ current_user.username }} <span class="role-tag">{{ current_user.role }}</span></span>
+      <a class="btn btn-ghost" href="{{ url_for('logout') }}">Log out</a>
+    </div>
+    {% endif %}
+  </div>
+</header>
+{% block nav %}{% endblock %}
+<main class="app-main">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+      <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="app-footer">
+  &copy; {{ 2026 }} — Internal planning tool. Final production loading remains subject to approved
+  tooling, clearance, airflow, cure-cycle and safety requirements.
+</footer>
+</body>
+</html>

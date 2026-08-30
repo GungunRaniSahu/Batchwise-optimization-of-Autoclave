@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Autoclave Batch Optimizer</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-body">
+<div class="login-card">
+  {% if logo_exists %}
+    <img class="login-logo" src="{{ url_for('static', filename='img/tata_logo.png') }}" alt="Company logo">
+  {% else %}
+    <div class="login-logo login-logo--placeholder">TATA</div>
+  {% endif %}
+  <h1>Autoclave Batch Optimizer</h1>
+  <p class="login-subtitle">Sign in to continue</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, msg in messages %}
+      <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="post">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required autofocus>
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="remember"> Keep me signed in on this device
+    </label>
+
+    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+  </form>
+  <p class="login-footnote">No account? Ask an admin to create one with <code>python manage_users.py add &lt;username&gt;</code>.</p>
+</div>
+</body>
+</html>
