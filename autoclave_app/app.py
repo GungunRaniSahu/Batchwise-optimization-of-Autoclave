@@ -8,7 +8,10 @@ from flask_login import (
 )
 
 from config import Config
-from auth import verify_user, get_user
+from auth import (
+    verify_user, get_user, create_user, user_exists, any_users_exist,
+    verify_recovery_pin, reset_password,
+)
 from scheduler import start_scheduler
 
 BASE_DIR = Config.BASE_DIR if hasattr(Config, "BASE_DIR") else os.path.dirname(os.path.abspath(__file__))
@@ -175,13 +178,14 @@ def optimize_batches(df, settings):
     invalid = []
     valid_rows = []
     for idx, r in available.iterrows():
-        if not str(r["TOOL NUMBER"]).strip() or r["_tool_L_mm"] <= 0 or r["_tool_W_mm"] <= 0:
-            invalid.append({"Part Number": r["Part Number"], "Reason": "Missing/invalid tool dimensions"})
+        row = r.to_dict()
+        if not str(row["TOOL NUMBER"]).strip() or row["_tool_L_mm"] <= 0 or row["_tool_W_mm"] <= 0:
+            invalid.append({"Part Number": row["Part Number"], "Reason": "Missing/invalid tool dimensions"})
             continue
-        if r["_tool_L_mm"] > settings["autoclave_length_mm"] and r["_tool_W_mm"] > settings["autoclave_width_mm"]:
-            invalid.append({"Part Number": r["Part Number"], "Reason": "Tool exceeds autoclave in both orientations"})
+        if row["_tool_L_mm"] > settings["autoclave_length_mm"] and row["_tool_W_mm"] > settings["autoclave_width_mm"]:
+            invalid.append({"Part Number": row["Part Number"], "Reason": "Tool exceeds autoclave in both orientations"})
             continue
-        valid_rows.append(r)
+        valid_rows.append(row)
 
     remaining = valid_rows[:]
     remaining.sort(key=lambda r: (0 if r["_type"] == "BIG" else 1, -r["_area_in2"]))
@@ -345,6 +349,83 @@ def logout():
     logout_user()
     flash("You have been signed out.", "success")
     return redirect(url_for("login"))
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        recovery_pin = request.form.get("recovery_pin", "").strip()
+
+        if not username or not password:
+            flash("Username and password are required.", "error")
+            return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+        if password != confirm:
+            flash("Passwords do not match.", "error")
+            return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "error")
+            return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+        if user_exists(Config.USERS_FILE, username):
+            flash(f"Username '{username}' is already taken.", "error")
+            return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+        if not recovery_pin or len(recovery_pin) < 4:
+            flash("Please set a recovery PIN of at least 4 digits — it's used for 'Forgot password'.", "error")
+            return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+
+        # The very first account created on a fresh install becomes admin;
+        # everyone after that is an operator by default.
+        role = "admin" if not any_users_exist(Config.USERS_FILE) else "operator"
+        create_user(Config.USERS_FILE, username, password, role=role, recovery_pin=recovery_pin)
+        flash(f"Account created for '{username}'. You can now sign in.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html", logo_exists=os.path.exists(LOGO_FILE))
+
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        stage = request.form.get("stage", "verify")
+        username = request.form.get("username", "").strip()
+
+        if stage == "verify":
+            pin = request.form.get("recovery_pin", "").strip()
+            if verify_recovery_pin(Config.USERS_FILE, username, pin):
+                return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE),
+                                        stage="reset", username=username, verified_pin=pin)
+            flash("Username or recovery PIN is incorrect.", "error")
+            return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE), stage="verify")
+
+        elif stage == "reset":
+            pin = request.form.get("recovery_pin", "").strip()
+            new_password = request.form.get("new_password", "")
+            confirm = request.form.get("confirm_password", "")
+            # Re-check the PIN so this step can't be reached by guessing the username alone.
+            if not verify_recovery_pin(Config.USERS_FILE, username, pin):
+                flash("Your session expired — please verify your recovery PIN again.", "error")
+                return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE), stage="verify")
+            if len(new_password) < 8:
+                flash("Password must be at least 8 characters.", "error")
+                return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE),
+                                        stage="reset", username=username, verified_pin=pin)
+            if new_password != confirm:
+                flash("Passwords do not match.", "error")
+                return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE),
+                                        stage="reset", username=username, verified_pin=pin)
+            reset_password(Config.USERS_FILE, username, new_password)
+            flash("Password updated. You can now sign in.", "success")
+            return redirect(url_for("login"))
+
+    return render_template("forgot_password.html", logo_exists=os.path.exists(LOGO_FILE), stage="verify")
 
 
 # ---------------------------------------------------------------------------
