@@ -10,7 +10,7 @@ settings.json
 backups/*.xlsx
 Optimized_Batches.xlsx
 .env
-
+.git/
 # OS/editor
 .DS_Store
 .vscode/
