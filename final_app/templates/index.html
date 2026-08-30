@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoclave Batch Optimization</title>
+<style>
+:root{--navy:#082b4c;--blue:#0d5c91;--sky:#eaf4fb;--steel:#526979;--green:#138a59;--red:#bd3545;--orange:#c77816;--white:#fff;--line:#d6e2ea}
+*{box-sizing:border-box} body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f4f7fa;color:#173042}
+header{background:linear-gradient(135deg,#061e36,#0d5c91);color:#fff;padding:16px 24px;box-shadow:0 3px 14px #001a2a44}
+.header-inner{max-width:1400px;margin:auto;display:flex;align-items:center;gap:18px}.logo{height:52px;max-width:125px;object-fit:contain;background:#fff;padding:5px;border-radius:6px}.logo-text{font-size:30px;font-weight:800;letter-spacing:1px}.title{font-size:22px;font-weight:700}.subtitle{font-size:12px;opacity:.82;margin-top:3px}
+nav{background:#051e32;color:#fff}.nav-inner{max-width:1400px;margin:auto;padding:9px 24px;font-size:13px}.tag{display:inline-block;border:1px solid #ffffff33;border-radius:20px;padding:5px 10px;margin-right:7px}
+main{max-width:1400px;margin:22px auto;padding:0 18px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 3px 12px #1730420d}.kpi{font-size:28px;font-weight:800;color:var(--navy)}.muted{color:#6a7b88;font-size:13px}
+.section{margin-top:18px}.section h2{font-size:19px;margin:0 0 12px;color:var(--navy)}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+label{display:block;font-size:12px;font-weight:700;color:#536b7b;margin:8px 0 5px}input,select{width:100%;padding:10px;border:1px solid #cbd9e2;border-radius:7px;background:#fff}button,.btn{border:0;border-radius:7px;padding:10px 14px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}button.green{background:var(--green)}button.orange{background:var(--orange)}button.red{background:var(--red)}
+.table-wrap{overflow:auto;max-height:470px;border:1px solid var(--line);border-radius:9px;background:#fff}table{width:100%;border-collapse:collapse;font-size:12px;min-width:950px}th{position:sticky;top:0;background:var(--navy);color:#fff;padding:9px;text-align:left}td{padding:8px;border-bottom:1px solid #e5edf2;white-space:nowrap}.yes{color:var(--green);font-weight:800}.no{color:var(--red);font-weight:800}.flash{padding:11px 14px;border-radius:8px;margin-bottom:10px;background:#e9f5ff;border-left:4px solid var(--blue)}.flash.error{background:#fff0f2;border-color:var(--red)}.flash.warning{background:#fff7e8;border-color:var(--orange)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.small{font-size:11px}.footnote{margin:16px 0 30px;color:#71818c;font-size:11px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.two,.three{grid-template-columns:1fr}.header-inner{align-items:flex-start}.logo-text{font-size:23px}.title{font-size:18px}}
+</style>
+</head>
+<body>
+<header><div class="header-inner">
+{% if logo_exists %}<img class="logo" src="{{ url_for('static', filename='tata_logo.png') }}" alt="Tata logo">{% else %}<div class="logo-text">TATA</div>{% endif %}
+<div><div class="title">AUTOCLAVE BATCH OPTIMIZATION SYSTEM</div><div class="subtitle">Aerospace Manufacturing • Composite Tooling • Capacity & Layout Planning</div></div>
+</div></header>
+<nav><div class="nav-inner"><span class="tag">24-Port Autoclave</span><span class="tag">Tool Footprint Check</span><span class="tag">Dynamic Availability</span><span class="tag">Web Optimizer</span></div></nav>
+<main>
+{% with messages=get_flashed_messages(with_categories=true) %}{% for category,msg in messages %}<div class="flash {{category}}">{{msg}}</div>{% endfor %}{% endwith %}
+
+<div class="grid">
+<div class="card"><div class="muted">Total Parts</div><div class="kpi">{{parts|length}}</div></div>
+<div class="card"><div class="muted">Available (YES)</div><div class="kpi">{{parts|selectattr('Availability','equalto','YES')|list|length}}</div></div>
+<div class="card"><div class="muted">Autoclave Capacity</div><div class="kpi">{{settings.total_ports}} <span class="muted">ports</span></div></div>
+<div class="card"><div class="muted">Working Envelope</div><div class="kpi" style="font-size:20px">{{settings.autoclave_length_mm|round(0)}} × {{settings.autoclave_width_mm|round(0)}} mm</div></div>
+</div>
+
+<div class="section two">
+<div class="card"><h2>⚙ Autoclave & Optimization Settings</h2>
+<form method="post" action="{{url_for('save_settings_route')}}"><div class="three">
+<div><label>Autoclave Length (mm)</label><input type="number" step="0.1" name="autoclave_length_mm" value="{{settings.autoclave_length_mm}}"></div>
+<div><label>Autoclave Width (mm)</label><input type="number" step="0.1" name="autoclave_width_mm" value="{{settings.autoclave_width_mm}}"></div>
+<div><label>Total Ports</label><input type="number" name="total_ports" value="{{settings.total_ports}}"></div>
+<div><label>BIG Ports</label><input type="number" name="big_ports" value="{{settings.big_ports}}"></div>
+<div><label>SMALL Ports</label><input type="number" name="small_ports" value="{{settings.small_ports}}"></div>
+<div><label>Max BIG Parts / Batch</label><input type="number" name="max_big_parts" value="{{settings.max_big_parts}}"></div>
+</div><label>BIG classification threshold — Tool Surface Area (in²)</label><input type="number" step="0.01" name="big_area_threshold_in2" value="{{settings.big_area_threshold_in2}}"><p class="small muted">This is a configurable placeholder rule. Replace it with your approved engineering BIG/SMALL classification if your process uses another rule.</p><button class="green">Save Settings</button></form>
+</div>
+<div class="card"><h2>🚀 Run Optimization</h2><p>Checks availability, port capacity, BIG-part limit, tool dimensions, rotation and 2D placement inside the autoclave working envelope.</p><form method="post" action="{{url_for('optimize')}}"><button class="orange">RUN BEST BATCH OPTIMIZATION</button></form>{% if output_exists %}<a class="btn" style="margin-top:10px" href="{{url_for('download')}}">Download Optimized_Batches.xlsx</a>{% endif %}<p class="small muted" style="margin-top:15px">Every Excel update creates a timestamped backup in the <b>backups</b> folder.</p></div>
+</div>
+
+<div class="section card"><h2>🔄 Availability — change YES / NO anytime</h2>
+<form method="post" action="{{url_for('update_all_availability')}}"><div class="table-wrap"><table><thead><tr><th>Part Number</th><th>Availability</th><th>Tool</th><th>Tool L (in)</th><th>Tool W (in)</th><th>Tool Area (in²)</th></tr></thead><tbody>
+{% for p in parts %}<tr><td><b>{{p['Part Number']}}</b></td><td><select name="avail__{{p['Part Number']}}"><option value="YES" {% if p['Availability']|string|trim|upper=='YES' %}selected{% endif %}>YES</option><option value="NO" {% if p['Availability']|string|trim|upper!='YES' %}selected{% endif %}>NO</option></select></td><td>{{p['TOOL NUMBER']}}</td><td>{{p['LENGTH (INCH)']}}</td><td>{{p['WIDTH(INCH)']}}</td><td>{{p['SURFACE AREA(INCH SQ)']}}</td></tr>{% endfor %}
+</tbody></table></div><div style="margin-top:10px"><button class="green">SAVE ALL AVAILABILITY CHANGES</button></div></form>
+</div>
+
+<div class="section card"><h2>➕ Add New Part</h2><form method="post" action="{{url_for('add_part')}}"><div class="three">
+<div><label>Part Number</label><input name="Part Number" required></div><div><label>Part L (inch)</label><input name="L (INCHES)" type="number" step="0.001"></div><div><label>Part W (inch)</label><input name="W (INCHES)" type="number" step="0.001"></div><div><label>Part H (inch)</label><input name="H (INCHES)" type="number" step="0.001"></div><div><label>Availability</label><select name="Availability"><option>YES</option><option>NO</option></select></div><div><label>Tool Number</label><input name="TOOL NUMBER"></div><div><label>Tool Length (inch)</label><input name="LENGTH (INCH)" type="number" step="0.001"></div><div><label>Tool Width (inch)</label><input name="WIDTH(INCH)" type="number" step="0.001"></div><div><label>Tool Surface Area (in²)</label><input name="SURFACE AREA(INCH SQ)" type="number" step="0.001"></div>
+</div><button class="green" style="margin-top:12px">ADD PART</button></form></div>
+
+<div class="section card"><h2>📌 Final constraint logic</h2><div class="three"><div><b>Port</b><br>Σ ports ≤ configured capacity.</div><div><b>BIG parts</b><br>Maximum configured BIG parts per batch.</div><div><b>Physical fit</b><br>Tool rectangles must fit within the autoclave envelope, with 90° rotation checked.</div></div><p class="footnote">Engineering note: this application is a planning/optimization aid. Final production loading must remain subject to approved tooling, clearance, airflow, cure-cycle and safety requirements.</p></div>
+</main>
+</body></html>
